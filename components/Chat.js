@@ -4,6 +4,8 @@ import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import CustomActions from './CustomActions';
+import MapView from 'react-native-maps';
 
 // import Firestore
 const firebase = require('firebase');
@@ -22,6 +24,8 @@ export default class Chat extends React.Component {
         avatar: "",
       },
       isConnected: false,
+      image: null,
+      location: null,
     }
     if (!firebase.apps.length) {
       firebase.initializeApp({
@@ -84,6 +88,8 @@ export default class Chat extends React.Component {
           name: data.user.name,
           avatar: data.user.avatar
         },
+        image: data.image || null,
+        location: data.location || null,
       });
     });
     this.setState({
@@ -168,6 +174,30 @@ export default class Chat extends React.Component {
     }
   }
 
+  renderCustomView(props) {
+    const { currentMessage } = props;
+    if (currentMessage.location) {
+      return (
+        <View style={{ borderRadius: 13, overflow: 'hidden', margin: 3 }}>
+          <MapView
+            style={{ width: 150, height: 100 }}
+            region={{
+              latitude: currentMessage.location.latitude,
+              longitude: currentMessage.location.longitude,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+          />
+        </View>
+      );
+    }
+    return null;
+  }
+
+  renderCustomActions = (props) => {
+    return <CustomActions {...props} />;
+  };
+
   addMessage() {
     // add a new message to the firebase collection
     const message = this.state.messages[0];
@@ -178,6 +208,8 @@ export default class Chat extends React.Component {
       createdAt: message.createdAt,
       text: message.text || '',
       user: this.state.user,
+      image: message.image || null,
+      location: message.location || null,
     });
   };
 
@@ -202,7 +234,10 @@ export default class Chat extends React.Component {
           renderBubble={this.renderBubble.bind(this)}
           renderInputToolbar={this.renderInputToolbar.bind(this)}
           messages={this.state.messages}
+          renderActions={this.renderCustomActions}
           onSend={messages => this.onSend(messages)}
+          renderUsernameOnMessage={true}
+          renderCustomView={this.renderCustomView}
           user={{
             _id: this.state.user._id,
             name: this.state.name,
